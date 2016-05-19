@@ -1,0 +1,11 @@
+login
+product view
+add product
+add warna-kategori
+add toko
+
+
+kode terima/dll
+kode barang
+value
+qty

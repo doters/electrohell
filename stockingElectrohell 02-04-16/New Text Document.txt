@@ -1,0 +1,7 @@
+pengiriman -disc
+return barang toko-nomor faktur
+
+
+validasi barang return
+form return
+	input nomor nota, load ke dataagrid data nota, jmlah 0 semua

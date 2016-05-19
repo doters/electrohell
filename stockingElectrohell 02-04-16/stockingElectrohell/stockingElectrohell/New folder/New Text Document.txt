@@ -1,0 +1,17 @@
+di form add product di savetoolstrip, txharga jual tryParse, kuangan cang ngetik try ne
+
+form subproduct(toolstripsave) update
+
+di module1 tambahin customNumber
+
+
+cek kodingan di form 5 in 1 ne wkkwk
+
+loadvaluetogrid kodinganne update
+initgrid, rowtotalupdate update case pengiriman
+nambah sub loadautokode jam txnama_textchange
+simpanpengiriman()
+
+insert ke tb_detail uli penerimaan jak pengiriman konden kris
+
+sing catet cang ane len ane beda

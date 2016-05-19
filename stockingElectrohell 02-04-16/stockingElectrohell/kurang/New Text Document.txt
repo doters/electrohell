@@ -1,0 +1,4 @@
+saat close form validasi sube
+cons di add garmen ilang sube
+update hrg beli di datagrid frm terima
+update hrg jual di datagrid frmjual toko
