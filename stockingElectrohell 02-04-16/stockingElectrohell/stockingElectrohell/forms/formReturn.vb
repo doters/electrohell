@@ -6,10 +6,12 @@ Public Class formReturn
     Dim clasQuery As New publicQuery
     Dim clasg As New setDefaultGrid
     Dim clasc As New autoComplete
+    Dim grid As New gridQueries
     Dim dr As MySqlDataReader
-    Dim kategori As String = "", tempBarcode As String = "", tempPrice As String = ""
+    Dim kategori As String = "", tempBarcode As String = "", tempPrice As String = "", tmpBarcode As String = ""
     Dim disc As String = "0"
     Dim autoNumber As String = ""
+    Dim dt As DataTable
 
 
     Private Sub formTerimaKirimJual_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -192,7 +194,8 @@ Public Class formReturn
                         clasQuery.updateQuery("update tb_stokgudangdetail set qty=qty+" & dGridAll.Rows(a).Cells(b).Value & " where kodeitem='" & dGridAll.Rows(a).Cells(0).Value & _
                                               "' and value='" & b - 3 & "' and warehouse='" & cmbGudang.SelectedIndex + 1 & "'")
                         tem &= "('" & txtresi.Text & "','" & dGridAll.Rows(a).Cells(0).Value _
-                                              & "','" & b - 3 & "','" & dGridAll.Rows(a).Cells(b).Value & "'),"
+                                              & "','" & b - 3 & "','" & dGridAll.Rows(a).Cells(b).Value & _
+                                             "','" & dGridAll.Rows(a).Cells(14).Value & "','" & dGridAll.Rows(a).Cells(13).Value & "'),"
                     Next
                     clasQuery.insertQuery("insert into tb_returndetail values " & tem.Substring(0, tem.Length - 1))
                     clasQuery.updateQuery("update tb_stoktoko set qty=qty-" & dGridAll.Rows(a).Cells(12).Value & " where kodeitem='" & _
@@ -213,7 +216,8 @@ Public Class formReturn
                         clasQuery.updateQuery("update tb_stokgudangdetail set qty=qty-" & dGridAll.Rows(a).Cells(b).Value & " where kodeitem='" & dGridAll.Rows(a).Cells(0).Value & _
                                               "' and value='" & b - 3 & "' and warehouse='" & cmbGudang.SelectedIndex + 1 & "'")
                         tem &= "('" & txtresi.Text & "','" & dGridAll.Rows(a).Cells(0).Value _
-                                              & "','" & b - 3 & "','" & dGridAll.Rows(a).Cells(b).Value & "'),"
+                                              & "','" & b - 3 & "','" & dGridAll.Rows(a).Cells(b).Value & _
+                                               "','" & dGridAll.Rows(a).Cells(14).Value & "','" & dGridAll.Rows(a).Cells(13).Value & "'),"
                     Next
                     clasQuery.insertQuery("insert into tb_returndetail values " & tem.Substring(0, tem.Length - 1))
                     clasQuery.updateQuery("update tb_stokgudang set qty=qty-" & dGridAll.Rows(a).Cells(12).Value & " where kodeitem='" & _
@@ -229,16 +233,20 @@ Public Class formReturn
     End Sub
 
     Private Sub txtbarkode_TextChanged(sender As Object, e As EventArgs) Handles txtbarkode.TextChanged
-        dr = clasQuery.retDatareader("select kodeitem, disc, price from tb_pengirimandetail where kode='" & txtbarkode.Text & "' group by kodeitem")
-        While (dr.Read())
-            disc = dr(1).ToString()
-            tempPrice = dr(2).ToString()
-            tempBarcode = dr(0).ToString()
-            loadValuetoGrid()
-        End While
+        Try
+            dr = clasQuery.retDatareader("select kodeitem, disc, price from tb_pengirimandetail where kode='" & txtbarkode.Text & "' group by kodeitem")
+            While (dr.Read())
+                tmpBarcode = txtbarkode.Text
+                disc = dr(1).ToString()
+                tempPrice = dr(2).ToString()
+                tempBarcode = dr(0).ToString()
+                loadValuetoGrid()
+            End While
+            'gridformat(dGridAll, 13)
+            gridformat(dGridAll, 15)
+        Catch ex As Exception
 
-        'gridformat(dGridAll, 13)
-        gridformat(dGridAll, 15)
+        End Try
     End Sub
 
     Private Sub SaveToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SaveToolStripMenuItem.Click
@@ -276,10 +284,34 @@ Public Class formReturn
 
     Private Sub dGridAll_CellValueChanged(sender As Object, e As DataGridViewCellEventArgs) Handles dGridAll.CellValueChanged
         Try
-            Dim subtotal As Integer = 0
-            For x As Integer = 4 To 11
-                subtotal += Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(x).Value)
-            Next
+            'tampung datatable
+            dt = grid.loadFilteredDataTable("select kodeItem, value, qty from tb_pengirimandetail where kode='" & tmpBarcode & "'")
+            Dim drs() As DataRow = dt.Select("kodeItem = '" & dGridAll.Rows(e.RowIndex).Cells(0).Value & "' and " & _
+                                             "value ='" & e.ColumnIndex - 3 & "'")
+
+            If dGridAll.Rows(e.RowIndex).Cells(e.ColumnIndex).Value > drs(0)("qty") Then
+                MsgBox("Value biger than items can returned")
+                dGridAll.Rows(e.RowIndex).Cells(e.ColumnIndex).Value = 0
+                Return
+            End If
+
+            If cmbstat.SelectedItem = "Store" Then
+                Dim subtotal As Integer = 0
+                For x As Integer = 4 To 11
+                    subtotal += Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(x).Value)
+                Next
+                dGridAll.Rows(e.RowIndex).Cells(12).Value = subtotal.ToString
+                dGridAll.Rows(e.RowIndex).Cells(15).Value = (subtotal * (Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(13).Value) - _
+                (Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(13).Value) * (Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(14).Value) / 100))))
+            ElseIf cmbstat.SelectedItem = "Garment" Then
+                Dim subtotal As Integer = 0
+                For x As Integer = 4 To 11
+                    subtotal += Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(x).Value)
+                Next
+                dGridAll.Rows(e.RowIndex).Cells(12).Value = subtotal.ToString
+                dGridAll.Rows(e.RowIndex).Cells(15).Value = (subtotal * (Integer.Parse(dGridAll.Rows(e.RowIndex).Cells(13).Value)))
+            End If
+            updateGrand()
         Catch ex As Exception
 
         End Try
@@ -288,13 +320,11 @@ Public Class formReturn
     End Sub
 
     Private Sub dGridAll_CellClick(sender As Object, e As DataGridViewCellEventArgs) Handles dGridAll.CellClick
-        Select Case Label2.Text
-            Case "Penerimaan", "Penjualan Toko"
-                If ((e.ColumnIndex >= 4 And e.ColumnIndex <= 11) Or (e.ColumnIndex = 13 Or e.ColumnIndex = 14)) And e.RowIndex >= 0 Then
-                    dGridAll.CurrentCell = dGridAll.Rows(e.RowIndex).Cells(e.ColumnIndex)
-                    dGridAll.BeginEdit(True)
-                End If
-        End Select
+        If ((e.ColumnIndex >= 4 And e.ColumnIndex <= 11) Or (e.ColumnIndex = 13 Or e.ColumnIndex = 14)) And e.RowIndex >= 0 Then
+            dGridAll.CurrentCell = dGridAll.Rows(e.RowIndex).Cells(e.ColumnIndex)
+            dGridAll.BeginEdit(True)
+        End If
+
     End Sub
 
     Private Sub cmbstat_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbstat.SelectedIndexChanged
@@ -309,11 +339,9 @@ Public Class formReturn
         If cmbstat.SelectedItem = "Store" Then
             TextBox7.Text = Environment.NewLine & Environment.NewLine & Environment.NewLine & "Cons."
             TextBox8.Text = Environment.NewLine & Environment.NewLine & Environment.NewLine & "Total Price"
-            dGridAll.Columns(14).Visible = True
         Else
             TextBox7.Text = Environment.NewLine & Environment.NewLine & Environment.NewLine & "Total Price"
             TextBox8.Text = ""
-            dGridAll.Columns(14).Visible = False
         End If
         loadCom()
     End Sub
